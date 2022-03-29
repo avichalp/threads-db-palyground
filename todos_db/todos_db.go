@@ -116,15 +116,11 @@ func CreateSchema(db *client.Client, threadID thread.ID) error {
 	return nil
 }
 
-func AddNewToDoItem(db *client.Client, threadID thread.ID, task string, creatorName string, creatorToken string) ([]string, error) {
+func AddNewToDoItem(db *client.Client, threadID thread.ID, task string, creator Person) ([]string, error) {
 	todoItem := TodoItem{
 		Description: task,
-		CreatedBy: Person{
-			ID:    "",
-			Name:  creatorName,
-			Token: creatorToken,
-		},
-		CreatedAt: int(time.Now().UnixNano()),
+		CreatedBy:   creator,
+		CreatedAt:   int(time.Now().UnixNano()),
 	}
 
 	ids, err := db.Create(context.Background(), threadID, "Todos", client.Instances{todoItem})

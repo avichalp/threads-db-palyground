@@ -1,18 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	"tdb-client/todos_db"
 
-	database "github.com/textileio/go-threads/db"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	taskDescription := os.Args[1]
-	keyPath := os.Args[2]
+func start(name, keyPath, taskDescription string) {
+
+	fmt.Println(name, keyPath, taskDescription)
 
 	// If private key in not found in the path
 	// new one is generated and saved.
@@ -42,7 +41,12 @@ func main() {
 	fmt.Println("User's Signed Thread Token", userToken)
 
 	// TODO: Add user's token in its struct
-	_, err = todos_db.AddNewToDoItem(db, threadID, taskDescription, "alice", string(userToken))
+	creator := todos_db.Person{
+		ID:    "",
+		Name:  name,
+		Token: string(userToken),
+	}
+	_, err = todos_db.AddNewToDoItem(db, threadID, taskDescription, creator)
 
 	// _, err = todos_db.AddNewToDoItem(db, threadID, taskDescription, "bob")
 	if err != nil {
@@ -59,14 +63,44 @@ func main() {
 	fmt.Println("Bob's task:", item.Description)
 	*/
 	// Alice's task
-	query := database.Where("person.name").Eq("alice")
-	results, err := db.Find(context.Background(), threadID, "Todos", query, &todos_db.TodoItem{})
-	if err != nil {
-		panic(err)
+
+	/*
+		query := database.Where("person.name").Eq("alice")
+		results, err := db.Find(context.Background(), threadID, "Todos", query, &todos_db.TodoItem{})
+		if err != nil {
+			panic(err)
+		}
+
+		item := results.([]*todos_db.TodoItem)[0]
+		fmt.Println("Alice's task:", item.Description)
+		fmt.Println("Alice's signed token:", item.CreatedBy.Token) */
+}
+
+func main() {
+	var name string
+	var privKeyPath string
+	var task string
+
+	rootCmd := &cobra.Command{
+		Use: "app",
+	}
+	startCmd := &cobra.Command{
+		Use:   "todo",
+		Short: "Add task",
+		Long:  "Add task",
+		Run: func(cmd *cobra.Command, args []string) {
+			start(name, privKeyPath, task)
+		},
 	}
 
-	item := results.([]*todos_db.TodoItem)[0]
-	fmt.Println("Alice's task:", item.Description)
-	fmt.Println("Alice's signed token:", item.CreatedBy.Token)
+	startCmd.Flags().StringVarP(&name, "name", "n", "", "creator name")
+	startCmd.Flags().StringVarP(&privKeyPath, "key", "f", "", "path to private key")
+	startCmd.Flags().StringVarP(&task, "task", "t", "", "descrition of the task")
+
+	rootCmd.AddCommand(startCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 
 }
